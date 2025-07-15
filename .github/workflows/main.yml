@@ -1,11 +1,7 @@
-name: Download and Upload Zip Contents
+name: Download and Upload Zip File Directly
 
 on:
   workflow_dispatch: # 手動でワークフローを実行できるようにします
-  # または、特定のイベント（例: push、scheduleなど）に設定することも可能です
-  # push:
-  #   branches:
-  #     - main
 
 jobs:
   download_and_upload:
@@ -15,33 +11,24 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download zip file
+    - name: Download zip file with retry
+      # curlコマンドで指定されたURLからZIPファイルをダウンロードします。
+      # --retryと--retry-delayオプションでダウンロードの信頼性を高めています。
       run: |
-        curl -L -o hujikopro_-_chipbreak_is_dead.zip https://vol4records.com/music/%5BVL4-043%5Dhujikopro_-_chipbreak_is_dead.zip
-
-    - name: Unzip file
-      run: |
-        unzip hujikopro_-_chipbreak_is_dead.zip -d extracted_content/
-
-    - name: Move extracted files to repository root
-      run: |
-        # 解凍されたファイルがサブディレクトリにある場合を考慮し、extracted_content/以下のファイルを全て移動
-        # .git/ ディレクトリを上書きしないように注意
-        shopt -s dotglob nullglob
-        mv extracted_content/* .
-        rmdir extracted_content/
-      # もし、zipのルートにファイルがあり、特定のディレクトリに移動したい場合は、適宜パスを調整してください。
-      # 例: mv extracted_content/* music/
+        curl -L -o hujikopro_-_chipbreak_is_dead.zip --retry 3 --retry-delay 5 https://vol4records.com/music/%5BVL4-043%5Dhujikopro_-_chipbreak_is_dead.zip
 
     - name: Configure Git
+      # Gitコミットのためにユーザー名とメールアドレスを設定します。
       run: |
         git config user.name "GitHub Actions"
         git config user.email "github-actions@github.com"
 
     - name: Add and commit changes
+      # ダウンロードしたZIPファイルをGitに追加し、コミットしてプッシュします。
+      # GITHUB_TOKENは、リポジトリへの書き込み権限を持つGitHub Actionsのデフォルトのトークンです。
       run: |
-        git add .
-        git commit -m "Add files from hujikopro_-_chipbreak_is_dead.zip"
+        git add hujikopro_-_chipbreak_is_dead.zip
+        git commit -m "Upload hujikopro_-_chipbreak_is_dead.zip"
         git push
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # デフォルトのGITHUB_TOKENを使用
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
