@@ -1,0 +1,47 @@
+name: Download and Upload Zip Contents
+
+on:
+  workflow_dispatch: # 手動でワークフローを実行できるようにします
+  # または、特定のイベント（例: push、scheduleなど）に設定することも可能です
+  # push:
+  #   branches:
+  #     - main
+
+jobs:
+  download_and_upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download zip file
+      run: |
+        curl -L -o hujikopro_-_chipbreak_is_dead.zip https://vol4records.com/music/%5BVL4-043%5Dhujikopro_-_chipbreak_is_dead.zip
+
+    - name: Unzip file
+      run: |
+        unzip hujikopro_-_chipbreak_is_dead.zip -d extracted_content/
+
+    - name: Move extracted files to repository root
+      run: |
+        # 解凍されたファイルがサブディレクトリにある場合を考慮し、extracted_content/以下のファイルを全て移動
+        # .git/ ディレクトリを上書きしないように注意
+        shopt -s dotglob nullglob
+        mv extracted_content/* .
+        rmdir extracted_content/
+      # もし、zipのルートにファイルがあり、特定のディレクトリに移動したい場合は、適宜パスを調整してください。
+      # 例: mv extracted_content/* music/
+
+    - name: Configure Git
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "github-actions@github.com"
+
+    - name: Add and commit changes
+      run: |
+        git add .
+        git commit -m "Add files from hujikopro_-_chipbreak_is_dead.zip"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # デフォルトのGITHUB_TOKENを使用
